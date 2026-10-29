@@ -23,15 +23,17 @@ inference_lock = threading.Lock()
 
 # 1. Load Baseline SPNet
 base_model = SPNet().to(device)
-if os.path.exists(r"weights\spnet_baseline.pth"):
-    base_model.load_state_dict(torch.load(r"weights\spnet_baseline.pth", map_location=device))
+base_path = os.path.join("weights", "spnet_baseline.pth")
+if os.path.exists(base_path):
+    base_model.load_state_dict(torch.load(base_path, map_location=device))
     base_model.eval()
     print("Baseline SPNet loaded successfully.")
 
 # 2. Load Proposed A-SPNet+
 upg_model = ASPNetPlus().to(device)
-if os.path.exists(r"weights\aspnet_plus.pth"):
-    upg_model.load_state_dict(torch.load(r"weights\aspnet_plus.pth", map_location=device))
+upg_path = os.path.join("weights", "aspnet_plus.pth")
+if os.path.exists(upg_path):
+    upg_model.load_state_dict(torch.load(upg_path, map_location=device))
     upg_model.eval()
     print("Upgraded A-SPNet+ loaded successfully.")
 
@@ -413,7 +415,7 @@ def index():
 
 @app.route('/sample/<filename>')
 def get_sample(filename):
-    sample_dir = os.path.abspath(r"data\test\LOL\low")
+    sample_dir = os.path.abspath(os.path.join("data", "test", "LOL", "low"))
     return send_from_directory(sample_dir, filename)
 
 @app.route('/enhance', methods=['POST'])

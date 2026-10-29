@@ -43,14 +43,14 @@ def load_models():
     """Load and cache PyTorch models into GPU memory."""
     # 1. Base SPNet
     base = SPNet().to(device)
-    base_path = r"weights\spnet_baseline.pth"
+    base_path = os.path.join("weights", "spnet_baseline.pth")
     if os.path.exists(base_path):
         base.load_state_dict(torch.load(base_path, map_location=device))
     base.eval()
 
     # 2. Upgraded A-SPNet+
     upg = ASPNetPlus().to(device)
-    upg_path = r"weights\aspnet_plus.pth"
+    upg_path = os.path.join("weights", "aspnet_plus.pth")
     if os.path.exists(upg_path):
         upg.load_state_dict(torch.load(upg_path, map_location=device))
     upg.eval()
@@ -150,12 +150,12 @@ with st.sidebar:
     selected_image = None
     if input_source == "Preset Benchmarks":
         benchmark_dict = {
-            "🏮 Ceiling Lamps (Night Market)": r"data\test\LOL\low\custom_ceiling.jpg",
-            "Tassels (Sample 179)": r"data\test\LOL\low\179.png",
-            "Totoro (Sample 22)": r"data\test\LOL\low\22.png",
-            "Blue Floor (Sample 780)": r"data\test\LOL\low\780.png",
-            "Bookshelf (Sample 1)": r"data\test\LOL\low\1.png",
-            "Wardrobe (Sample 146)": r"data\test\LOL\low\146.png"
+            "🏮 Ceiling Lamps (Night Market)": os.path.join("data", "test", "LOL", "low", "custom_ceiling.jpg"),
+            "Tassels (Sample 179)": os.path.join("data", "test", "LOL", "low", "179.png"),
+            "Totoro (Sample 22)": os.path.join("data", "test", "LOL", "low", "22.png"),
+            "Blue Floor (Sample 780)": os.path.join("data", "test", "LOL", "low", "780.png"),
+            "Bookshelf (Sample 1)": os.path.join("data", "test", "LOL", "low", "1.png"),
+            "Wardrobe (Sample 146)": os.path.join("data", "test", "LOL", "low", "146.png")
         }
         bench_selection = st.selectbox("Choose Benchmark Sample:", list(benchmark_dict.keys()))
         sample_path = benchmark_dict[bench_selection]
