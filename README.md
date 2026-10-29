@@ -11,17 +11,6 @@ An unsupervised, deep learning framework for low-light image enhancement, reprod
 
 ---
 
-## 🎓 Academic Project Attribution
-* **Institution:** Department of Electronics and Communication Engineering (ECE), Rajeev Gandhi Memorial College of Engineering and Technology (RGMCET Autonomous), Nandyal, Andhra Pradesh.
-* **Batch:** Batch 60 (Final Year B.Tech Project)
-* **Students:**
-  * **K. Pradeep** (Reg. No: `23091A04D9`)
-  * **K. Pavani** (Reg. No: `23091A04D7`)
-* **Project Guide:** Mr. N. Vinod Kumar, M.Tech, (Ph.D), Assistant Professor, ECE Dept.
-* **Head of Department:** Dr. J. Sofia Priya Dharshini, Associate Professor & HOD, ECE Dept.
-
----
-
 ## 🌟 Key Highlights & Proposed Innovations (A-SPNet+)
 
 While the baseline SPNet paper achieves competitive results, it suffers from several key limitations:
@@ -116,3 +105,4 @@ python train_upgraded.py --epochs 150 --lr 0.0001
   doi={10.1109/TMM.2024.3521752}
 }
 ```
+

@@ -160,9 +160,8 @@ HTML_TEMPLATE = """
 <body>
     <div class="container">
         <header>
-            <span class="badge">Final Year B.Tech Project • Batch 60</span>
-            <h1>Adaptive Low-Light Image Enhancement</h1>
-            <p class="meta">Department of ECE, RGMCET (Autonomous) • K. Pradeep (23091A04D9) & K. Pavani (23091A04D7)</p>
+            <h1>Adaptive Low-Light Image Enhancement Studio</h1>
+            <p class="meta">Deep Unsupervised Retinex Decomposition with Wavelet Denoising & SALEM Exposure</p>
         </header>
 
         <div class="grid-panel">

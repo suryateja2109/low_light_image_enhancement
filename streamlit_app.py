@@ -12,7 +12,7 @@ from models.aspnet_plus import ASPNetPlus
 
 # Set Streamlit Page Configuration
 st.set_page_config(
-    page_title="Low-Light Image Enhancement Studio | RGMCET ECE",
+    page_title="Low-Light Image Enhancement Studio",
     page_icon="✨",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -24,17 +24,6 @@ st.markdown("""
     .main-header {
         text-align: center;
         padding: 0.5rem 0 1.5rem 0;
-    }
-    .badge-pill {
-        display: inline-block;
-        padding: 0.3rem 0.85rem;
-        border-radius: 9999px;
-        background: rgba(56, 189, 248, 0.15);
-        color: #38bdf8;
-        font-size: 0.85rem;
-        font-weight: 600;
-        margin-bottom: 0.5rem;
-        border: 1px solid #38bdf8;
     }
     .metric-card {
         background: #1e293b;
@@ -125,7 +114,7 @@ def process_enhancement(pil_img, model_type, sat_scale):
 
     t0 = time.time()
     with torch.no_grad():
-        if model_type == "SPNet (Base Paper Model)":
+        if model_type == "SPNet (Base Model)":
             _, _, _, _, enh = base_model(t_s1, t_she, t_s2, lam=0.85)
             params = "0.85 M"
         else:
@@ -145,17 +134,11 @@ def process_enhancement(pil_img, model_type, sat_scale):
 
 # ----------------- SIDEBAR -----------------
 with st.sidebar:
-    st.markdown('<div class="badge-pill">Final Year B.Tech Project • Batch 60</div>', unsafe_allow_html=True)
     st.title("🎛️ Control Panel")
-    st.caption("Department of ECE, RGMCET (Autonomous)")
-    st.write("**Students:** K. Pradeep (23091A04D9), K. Pavani (23091A04D7)")
-    st.write("**Guide:** Mr. N. Vinod Kumar, M.Tech, (Ph.D)")
-    st.write("**HOD:** Dr. J. Sofia Priya Dharshini")
-    st.divider()
 
     model_choice = st.radio(
         "🧠 Select Model Architecture:",
-        ("A-SPNet+ (Our Upgraded Model)", "SPNet (Base Paper Model)"),
+        ("A-SPNet+ (Upgraded Model)", "SPNet (Base Model)"),
         help="A-SPNet+ features Wavelet Denoising, Spatial-SPL Map, and SALEM Exposure Attention."
     )
 
@@ -168,9 +151,9 @@ with st.sidebar:
     if input_source == "Preset Benchmarks":
         benchmark_dict = {
             "🏮 Ceiling Lamps (Night Market)": r"data\test\LOL\low\custom_ceiling.jpg",
-            "Tassels (Fig. 5 Base Paper)": r"data\test\LOL\low\179.png",
-            "Totoro (Fig. 5 Base Paper)": r"data\test\LOL\low\22.png",
-            "Blue Floor (Fig. 5 Base Paper)": r"data\test\LOL\low\780.png",
+            "Tassels (Sample 179)": r"data\test\LOL\low\179.png",
+            "Totoro (Sample 22)": r"data\test\LOL\low\22.png",
+            "Blue Floor (Sample 780)": r"data\test\LOL\low\780.png",
             "Bookshelf (Sample 1)": r"data\test\LOL\low\1.png",
             "Wardrobe (Sample 146)": r"data\test\LOL\low\146.png"
         }
@@ -186,8 +169,7 @@ with st.sidebar:
 # ----------------- MAIN UI -----------------
 st.markdown("""
 <div class="main-header">
-    <div class="badge-pill">IEEE Transactions on Multimedia 2025 Reproduction & Upgrade</div>
-    <h1>Adaptive Low-Light Image Enhancement with Self-Paced Learning</h1>
+    <h1>Adaptive Low-Light Image Enhancement Studio</h1>
     <p style="color:#94a3b8; font-size:1.05rem;">
         Unsupervised Retinex Decomposition powered by Spatial-SPL, Wavelet Detail Enhancement, and SALEM Exposure
     </p>
@@ -202,7 +184,7 @@ if selected_image is not None:
     # Metrics Display
     m1, m2, m3, m4 = st.columns(4)
     with m1:
-        st.metric("Inference Latency", f"{latency:.1f} ms", delta="-9.6 ms vs Base Paper" if "Upgraded" in model_choice else None)
+        st.metric("Inference Latency", f"{latency:.1f} ms", delta="-9.6 ms vs Baseline" if "Upgraded" in model_choice else None)
     with m2:
         st.metric("Model Parameters", params, delta="-33.4% Lighter" if "Upgraded" in model_choice else None)
     with m3:
@@ -236,12 +218,12 @@ if selected_image is not None:
 st.divider()
 
 # Educational & Comparison Tabs
-tab1, tab2, tab3 = st.tabs(["📊 Performance Evaluation Benchmark", "🔬 Architectural Novelty (Our Upgrades)", "📄 Base Paper Reference"])
+tab1, tab2 = st.tabs(["📊 Performance Evaluation Benchmark", "🔬 Architectural Novelty (Our Upgrades)"])
 
 with tab1:
     st.subheader("Comprehensive Benchmark on LOL Dataset (15 Pairs)")
     st.markdown("""
-    | Metric | Baseline SPNet (Base Paper) | A-SPNet+ (Our Upgraded Model) | Improvement / Advantage |
+    | Metric | Baseline SPNet | A-SPNet+ (Our Upgraded Model) | Improvement / Advantage |
     | :--- | :---: | :---: | :---: |
     | **LOE (Lightness Order Error)** | `42.2` | **`27.7`** | **34.4% Error Reduction** (100% of test images improved) |
     | **Parameter Count** | `0.85 M` | **`0.56 M`** | **33.4% More Lightweight** (Integrated Wavelet vs Bulky Denoiser) |
@@ -251,23 +233,14 @@ with tab1:
     """)
 
 with tab2:
-    st.subheader("How Our A-SPNet+ Solved the Base Paper's Limitations")
+    st.subheader("How Our A-SPNet+ Solved Baseline Limitations")
     c1, c2, c3 = st.columns(3)
     with c1:
         st.markdown("#### 1. Spatial-SPL Map")
-        st.write("Replaced the base paper's rigid global scalar guidance $\lambda$ with a learnable 2D Spatial Difficulty Map $\Lambda(x, y)$, granting pixel-level adaptive learning.")
+        st.write("Replaced the rigid global scalar guidance $\lambda$ with a learnable 2D Spatial Difficulty Map $\Lambda(x, y)$, granting pixel-level adaptive learning.")
     with c2:
         st.markdown("#### 2. Integrated Wavelet Denoising")
         st.write("Replaced the decoupled 0.74M external denoiser with lightweight 2D Haar Wavelet detail attention, slashing parameters by 33.4% and cutting latency to 12.3 ms.")
     with c3:
         st.markdown("#### 3. SALEM Exposure Control")
-        st.write("Integrated Spatially-Adaptive Local Exposure Module (SALEM) to balance extreme lighting contrasts, eliminating the base paper's LOE highlight clipping.")
-
-with tab3:
-    st.markdown("""
-    * **Base Paper Title:** *Unsupervised Low-Light Image Enhancement With Self-Paced Learning*
-    * **Journal:** IEEE Transactions on Multimedia (IEEE TMM 2025)
-    * **Authors:** Yu Luo, Xiangru Chen, Zhihe Lu, Pengyu Li, Yisong Chen
-    * **DOI:** `10.1109/TMM.2024.3521752`
-    * **Department:** Department of ECE, Rajeev Gandhi Memorial College of Engineering and Technology (Autonomous), Nandyal.
-    """)
+        st.write("Integrated Spatially-Adaptive Local Exposure Module (SALEM) to balance extreme lighting contrasts, eliminating baseline LOE highlight clipping.")
