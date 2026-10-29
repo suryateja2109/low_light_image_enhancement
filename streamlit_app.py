@@ -182,15 +182,13 @@ if selected_image is not None:
         enhanced_pil, latency, params, boost = process_enhancement(selected_image, model_choice, sat_scale)
 
     # Metrics Display
-    m1, m2, m3, m4 = st.columns(4)
+    m1, m2, m3 = st.columns(3)
     with m1:
         st.metric("Inference Latency", f"{latency:.1f} ms", delta="-9.6 ms vs Baseline" if "Upgraded" in model_choice else None)
     with m2:
         st.metric("Model Parameters", params, delta="-33.4% Lighter" if "Upgraded" in model_choice else None)
     with m3:
         st.metric("Brightness Boost", f"+{boost}%", delta="Normalised Contrast")
-    with m4:
-        st.metric("Compute Hardware", f"{torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'CPU'}")
 
     st.write("")
 
