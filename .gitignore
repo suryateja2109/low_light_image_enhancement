@@ -1,0 +1,23 @@
+# Datasets (large training datasets - can be downloaded using download_datasets.py)
+data/raw/
+data/train/
+
+# Python & Environment
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.env
+.venv/
+venv/
+env/
+
+# IDE & OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Cache & Logs
+.pytest_cache/
+*.log
