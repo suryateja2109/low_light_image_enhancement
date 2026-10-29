@@ -39,6 +39,8 @@ ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # Device Configuration
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+if device.type == "cpu":
+    torch.set_num_threads(2)
 
 @st.cache_resource
 def load_models():
