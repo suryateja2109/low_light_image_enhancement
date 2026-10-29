@@ -108,8 +108,8 @@ def restore_vivid_color(raw_input_np, enhanced_lum_np, saturation_scale=1.15):
     return vivid_rgb
 
 def process_enhancement(pil_img, model_type, sat_scale):
-    # Intelligent downsampling if image is too large
-    max_dim = 1200
+    # Intelligent downsampling: cap at 800 on Cloud CPU for fast sub-second inference
+    max_dim = 800 if device.type == "cpu" else 1200
     w, h = pil_img.size
     if max(w, h) > max_dim:
         if w > h:
@@ -244,7 +244,7 @@ tab1, tab2 = st.tabs(["📊 Performance Evaluation Benchmark", "🔬 Architectur
 
 with tab1:
     st.subheader("Comprehensive Benchmark on LOL Dataset (15 Pairs)")
-    st.markdown("""
+    st.markdown(r"""
     | Metric | Baseline SPNet | A-SPNet+ (Our Upgraded Model) | Improvement / Advantage |
     | :--- | :---: | :---: | :---: |
     | **LOE (Lightness Order Error)** | `42.2` | **`27.7`** | **34.4% Error Reduction** (100% of test images improved) |
@@ -259,7 +259,7 @@ with tab2:
     c1, c2, c3 = st.columns(3)
     with c1:
         st.markdown("#### 1. Spatial-SPL Map")
-        st.write("Replaced the rigid global scalar guidance $\lambda$ with a learnable 2D Spatial Difficulty Map $\Lambda(x, y)$, granting pixel-level adaptive learning.")
+        st.write(r"Replaced the rigid global scalar guidance $\lambda$ with a learnable 2D Spatial Difficulty Map $\Lambda(x, y)$, granting pixel-level adaptive learning.")
     with c2:
         st.markdown("#### 2. Integrated Wavelet Denoising")
         st.write("Replaced the decoupled 0.74M external denoiser with lightweight 2D Haar Wavelet detail attention, slashing parameters by 33.4% and cutting latency to 12.3 ms.")
