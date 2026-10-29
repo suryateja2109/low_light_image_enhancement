@@ -1,11 +1,17 @@
 import os
 import io
 import time
-import cv2
 import numpy as np
 import torch
-from PIL import Image
+from PIL import Image, ImageEnhance
 import streamlit as st
+
+try:
+    import cv2
+    HAS_CV2 = True
+except (ImportError, ModuleNotFoundError):
+    cv2 = None
+    HAS_CV2 = False
 
 from models.spnet_base import SPNet
 from models.aspnet_plus import ASPNetPlus
@@ -63,8 +69,17 @@ def channelwise_he(img_np):
     """Channel-wise RGB Histogram Equalization preserving chromaticity."""
     img_u8 = np.clip(img_np * 255.0, 0, 255).astype(np.uint8)
     res = np.zeros_like(img_u8)
-    for c in range(3):
-        res[:, :, c] = cv2.equalizeHist(img_u8[:, :, c])
+    if HAS_CV2 and cv2 is not None:
+        for c in range(3):
+            res[:, :, c] = cv2.equalizeHist(img_u8[:, :, c])
+    else:
+        for c in range(3):
+            ch = img_u8[:, :, c]
+            hist, _ = np.histogram(ch.flatten(), 256, [0, 256])
+            cdf = hist.cumsum()
+            cdf_min = cdf[cdf > 0].min() if np.any(cdf > 0) else 0
+            cdf_norm = (cdf - cdf_min) * 255.0 / max(1, (cdf[-1] - cdf_min))
+            res[:, :, c] = cdf_norm[ch].astype(np.uint8)
     return res.astype(np.float32) / 255.0
 
 def restore_vivid_color(raw_input_np, enhanced_lum_np, saturation_scale=1.15):
@@ -77,10 +92,19 @@ def restore_vivid_color(raw_input_np, enhanced_lum_np, saturation_scale=1.15):
 
     ratio = np.clip(lum_enh / lum_in, 0.0, 20.0)[:, :, np.newaxis]
     color_projected = np.clip(raw_input_np * ratio, 0.0, 1.0)
+    u8 = (color_projected * 255.0).astype(np.uint8)
 
-    hsv = cv2.cvtColor((color_projected * 255.0).astype(np.uint8), cv2.COLOR_RGB2HSV).astype(np.float32)
-    hsv[:, :, 1] = np.clip(hsv[:, :, 1] * saturation_scale, 0, 255)
-    vivid_rgb = cv2.cvtColor(hsv.astype(np.uint8), cv2.COLOR_HSV2RGB).astype(np.float32) / 255.0
+    if HAS_CV2 and cv2 is not None:
+        hsv = cv2.cvtColor(u8, cv2.COLOR_RGB2HSV).astype(np.float32)
+        hsv[:, :, 1] = np.clip(hsv[:, :, 1] * saturation_scale, 0, 255)
+        vivid_rgb = cv2.cvtColor(hsv.astype(np.uint8), cv2.COLOR_HSV2RGB).astype(np.float32) / 255.0
+    else:
+        # High quality pure PIL fallback
+        pil_im = Image.fromarray(u8)
+        enhancer = ImageEnhance.Color(pil_im)
+        vivid_im = enhancer.enhance(saturation_scale)
+        vivid_rgb = np.array(vivid_im, dtype=np.float32) / 255.0
+
     return vivid_rgb
 
 def process_enhancement(pil_img, model_type, sat_scale):
