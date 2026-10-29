@@ -3,15 +3,8 @@ import io
 import time
 import numpy as np
 import torch
-from PIL import Image, ImageEnhance
+from PIL import Image, ImageOps, ImageEnhance
 import streamlit as st
-
-try:
-    import cv2
-    HAS_CV2 = True
-except (ImportError, ModuleNotFoundError):
-    cv2 = None
-    HAS_CV2 = False
 
 from models.spnet_base import SPNet
 from models.aspnet_plus import ASPNetPlus
@@ -41,51 +34,43 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+# Project root directory for bulletproof path resolution on Streamlit Cloud (Linux)
+ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
+
 # Device Configuration
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 @st.cache_resource
 def load_models():
-    """Load and cache PyTorch models into GPU memory."""
+    """Load and cache PyTorch models."""
     # 1. Base SPNet
     base = SPNet().to(device)
-    base_path = os.path.join("weights", "spnet_baseline.pth")
+    base_path = os.path.join(ROOT_DIR, "weights", "spnet_baseline.pth")
     if os.path.exists(base_path):
-        base.load_state_dict(torch.load(base_path, map_location=device))
+        base.load_state_dict(torch.load(base_path, map_location=device, weights_only=True))
     base.eval()
 
     # 2. Upgraded A-SPNet+
     upg = ASPNetPlus().to(device)
-    upg_path = os.path.join("weights", "aspnet_plus.pth")
+    upg_path = os.path.join(ROOT_DIR, "weights", "aspnet_plus.pth")
     if os.path.exists(upg_path):
-        upg.load_state_dict(torch.load(upg_path, map_location=device))
+        upg.load_state_dict(torch.load(upg_path, map_location=device, weights_only=True))
     upg.eval()
 
     return base, upg
 
 base_model, upg_model = load_models()
 
-def channelwise_he(img_np):
-    """Channel-wise RGB Histogram Equalization preserving chromaticity."""
-    img_u8 = np.clip(img_np * 255.0, 0, 255).astype(np.uint8)
-    res = np.zeros_like(img_u8)
-    if HAS_CV2 and cv2 is not None:
-        for c in range(3):
-            res[:, :, c] = cv2.equalizeHist(img_u8[:, :, c])
-    else:
-        for c in range(3):
-            ch = img_u8[:, :, c]
-            hist, _ = np.histogram(ch.flatten(), 256, [0, 256])
-            cdf = hist.cumsum()
-            cdf_min = cdf[cdf > 0].min() if np.any(cdf > 0) else 0
-            cdf_norm = (cdf - cdf_min) * 255.0 / max(1, (cdf[-1] - cdf_min))
-            res[:, :, c] = cdf_norm[ch].astype(np.uint8)
-    return res.astype(np.float32) / 255.0
+def compute_she(pil_img):
+    """Robust, artifact-free histogram equalization using PIL native C-accelerator."""
+    she_pil = ImageOps.equalize(pil_img)
+    return np.array(she_pil, dtype=np.float32) / 255.0
 
 def restore_vivid_color(raw_input_np, enhanced_lum_np, saturation_scale=1.15):
     """
     Retinex Color Coupling:
-    Couples network structural luminance with raw chromaticity spectrum.
+    Couples network structural luminance with raw chromaticity spectrum,
+    restoring natural colors and preventing black-contour solarization.
     """
     lum_in = 0.299 * raw_input_np[:, :, 0] + 0.587 * raw_input_np[:, :, 1] + 0.114 * raw_input_np[:, :, 2] + 1e-4
     lum_enh = 0.299 * enhanced_lum_np[:, :, 0] + 0.587 * enhanced_lum_np[:, :, 1] + 0.114 * enhanced_lum_np[:, :, 2]
@@ -94,17 +79,11 @@ def restore_vivid_color(raw_input_np, enhanced_lum_np, saturation_scale=1.15):
     color_projected = np.clip(raw_input_np * ratio, 0.0, 1.0)
     u8 = (color_projected * 255.0).astype(np.uint8)
 
-    if HAS_CV2 and cv2 is not None:
-        hsv = cv2.cvtColor(u8, cv2.COLOR_RGB2HSV).astype(np.float32)
-        hsv[:, :, 1] = np.clip(hsv[:, :, 1] * saturation_scale, 0, 255)
-        vivid_rgb = cv2.cvtColor(hsv.astype(np.uint8), cv2.COLOR_HSV2RGB).astype(np.float32) / 255.0
-    else:
-        # High quality pure PIL fallback
-        pil_im = Image.fromarray(u8)
-        enhancer = ImageEnhance.Color(pil_im)
-        vivid_im = enhancer.enhance(saturation_scale)
-        vivid_rgb = np.array(vivid_im, dtype=np.float32) / 255.0
-
+    # Clean, vibrant color enhancement in PIL
+    pil_im = Image.fromarray(u8)
+    enhancer = ImageEnhance.Color(pil_im)
+    vivid_im = enhancer.enhance(saturation_scale)
+    vivid_rgb = np.array(vivid_im, dtype=np.float32) / 255.0
     return vivid_rgb
 
 def process_enhancement(pil_img, model_type, sat_scale):
@@ -129,7 +108,8 @@ def process_enhancement(pil_img, model_type, sat_scale):
 
     img_np = np.array(pil_img, dtype=np.float32) / 255.0
 
-    she_np = channelwise_he(img_np)
+    # 1. Compute SHE and S2
+    she_np = compute_she(pil_img)
     s2_np = np.clip(img_np + 0.5 * img_np * (1.0 - img_np), 0.0, 1.0)
 
     t_s1 = torch.from_numpy(img_np.transpose(2,0,1)).unsqueeze(0).float().to(device)
@@ -174,12 +154,12 @@ with st.sidebar:
     selected_image = None
     if input_source == "Preset Benchmarks":
         benchmark_dict = {
-            "🏮 Ceiling Lamps (Night Market)": os.path.join("data", "test", "LOL", "low", "custom_ceiling.jpg"),
-            "Tassels (Sample 179)": os.path.join("data", "test", "LOL", "low", "179.png"),
-            "Totoro (Sample 22)": os.path.join("data", "test", "LOL", "low", "22.png"),
-            "Blue Floor (Sample 780)": os.path.join("data", "test", "LOL", "low", "780.png"),
-            "Bookshelf (Sample 1)": os.path.join("data", "test", "LOL", "low", "1.png"),
-            "Wardrobe (Sample 146)": os.path.join("data", "test", "LOL", "low", "146.png")
+            "Totoro (Sample 22)": os.path.join(ROOT_DIR, "data", "test", "LOL", "low", "22.png"),
+            "🏮 Ceiling Lamps (Night Market)": os.path.join(ROOT_DIR, "data", "test", "LOL", "low", "custom_ceiling.jpg"),
+            "Tassels (Sample 179)": os.path.join(ROOT_DIR, "data", "test", "LOL", "low", "179.png"),
+            "Blue Floor (Sample 780)": os.path.join(ROOT_DIR, "data", "test", "LOL", "low", "780.png"),
+            "Bookshelf (Sample 1)": os.path.join(ROOT_DIR, "data", "test", "LOL", "low", "1.png"),
+            "Wardrobe (Sample 146)": os.path.join(ROOT_DIR, "data", "test", "LOL", "low", "146.png")
         }
         bench_selection = st.selectbox("Choose Benchmark Sample:", list(benchmark_dict.keys()))
         sample_path = benchmark_dict[bench_selection]
